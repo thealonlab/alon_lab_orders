@@ -3,123 +3,12 @@ import pandas as pd
 import sqlite3
 from datetime import datetime
 import chardet
-import gdown
-import os
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
-from google.oauth2.service_account import Credentials
 from io import BytesIO
 import io
 
-
-# Google Drive file ID of the uploaded SQLite database
-GOOGLE_DRIVE_FILE_ID = "1wwnKYEPhtTb-59aGfkX5jQXmfbUKcXFK"
-LOCAL_DB_FILE = "inventory.db"
-
-# Load credentials from Streamlit secrets
-credentials_info = st.secrets["google_drive"]
-credentials_dict = {
-    "type": credentials_info["type"],
-    "project_id": credentials_info["project_id"],
-    "private_key_id": credentials_info["private_key_id"],
-    "private_key": credentials_info["private_key"].replace("\\n", "\n"),  # Handle multiline key
-    "client_email": credentials_info["client_email"],
-    "client_id": credentials_info["client_id"],
-    "auth_uri": credentials_info["auth_uri"],
-    "token_uri": credentials_info["token_uri"],
-    "auth_provider_x509_cert_url": credentials_info["auth_provider_x509_cert_url"],
-    "client_x509_cert_url": credentials_info["client_x509_cert_url"]
-}
-
-# Create credentials object for Google API
-
-# Function to authenticate and create a Google Drive service client
-def get_drive_service():
-    credentials = Credentials.from_service_account_info(credentials_dict, scopes=["https://www.googleapis.com/auth/drive"])
-    service = build("drive", "v3", credentials=credentials)
-    return service
-
-
-# Function to download the database file from Google Drive
-def download_db():
-    if not os.path.exists(LOCAL_DB_FILE) or not validate_db():
-        st.info("Downloading database from Google Drive...")
-        try:
-            gdown.cached_download(f"https://drive.google.com/uc?id={GOOGLE_DRIVE_FILE_ID}", LOCAL_DB_FILE, quiet=False)
-            st.success("Database downloaded successfully.")
-        except Exception as e:
-            st.error(f"Failed to download the database: {e}")
-
-# Function to check if the database contains required tables
-def validate_db():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='inventory';")
-        table_exists = cursor.fetchone()
-        conn.close()
-        return bool(table_exists)
-    except sqlite3.Error:
-        return False
-
-# Function to upload the updated database file back to Google Drive
-
-def upload_db():
-    st.info("Uploading updated database to Google Drive...")
-    try:
-        service = get_drive_service()
-        
-        media = MediaFileUpload(LOCAL_DB_FILE, mimetype='application/x-sqlite3', resumable=True)
-        
-        service.files().update(
-            fileId=GOOGLE_DRIVE_FILE_ID,
-            media_body=media
-        ).execute()
-
-        st.success("Database uploaded successfully to Google Drive.")
-    except Exception as e:
-        st.error(f"Failed to upload the database: {e}")
-
-
-#def upload_db():
-#    st.info("Uploading updated database to Google Drive...")
-#    try:
-#        service = get_drive_service()
-#
-#        # Use MediaFileUpload for proper file upload
-#        media = MediaFileUpload(LOCAL_DB_FILE, mimetype='application/octet-stream', resumable=True)
-#
-#        service.files().update(
-#            fileId=GOOGLE_DRIVE_FILE_ID,
-#            media_body=media
-#        ).execute()
-#
-#        st.success("Database uploaded successfully to Google Drive.")
-#    except Exception as e:
-#        st.error(f"Failed to upload the database: {e}")
-
-
-#ef upload_db():
-#   st.info("Uploading updated database to Google Drive...")
-#   try:
-#       service = get_drive_service()
-#       file_metadata = {"name": LOCAL_DB_FILE}
-#       with open(LOCAL_DB_FILE, "rb") as media:
-#           service.files().update(
-#               fileId=GOOGLE_DRIVE_FILE_ID,
-#               media_body=media
-#           ).execute()
-#       st.success("Database uploaded successfully to Google Drive.")
-#   except Exception as e:
-#       st.error(f"Failed to upload the database: {e}")
-
 # Database connection
 def get_db_connection():
-    return sqlite3.connect(LOCAL_DB_FILE, check_same_thread=False)
-
-## Database connection old
-#def get_db_connection():
-#    return sqlite3.connect("inventory.db")
+    return sqlite3.connect("inventory.db")
 
 # Initialize database
 def init_db():
@@ -145,24 +34,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Start by downloading the database and initializing it
-download_db()
 init_db()
-
-# Function to retrieve inventory data
-def get_inventory():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM inventory")
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
-
-inventory_df = pd.DataFrame(get_inventory(), columns=[
-    "ID", "Requested By", "Catalog Number", "Vendor", "Name", "URL",
-    "Quantity", "Unit", "Notes", "Cost", "Status", "Order Date", "Received Date"
-])
-inventory_df = inventory_df.drop(columns=["ID"])
 
 # Function to add an item to the database
 def add_inventory_item(requested_by, catalog_number, vendor, name, url, quantity, unit, notes, cost, status):
@@ -174,7 +46,6 @@ def add_inventory_item(requested_by, catalog_number, vendor, name, url, quantity
     ''', (requested_by, catalog_number, vendor, name, url, quantity, unit, notes, cost, status))
     conn.commit()
     conn.close()
-    upload_db()  # Upload the updated database after addition
 
 # Function to delete an item from the database
 def delete_inventory_item(catalog_number, vendor):
@@ -183,7 +54,7 @@ def delete_inventory_item(catalog_number, vendor):
     cursor.execute("DELETE FROM inventory WHERE catalog_number = ? AND vendor = ?", (catalog_number, vendor))
     conn.commit()
     conn.close()
-    upload_db()  # Upload the updated database after addition
+
 
 # Function to get an item by catalog number and vendor
 def get_item_by_catalog_and_vendor(catalog_number, vendor):
@@ -208,7 +79,7 @@ def edit_inventory_item(item_id, requested_by, catalog_number, vendor, name, url
     ''', (requested_by, catalog_number, vendor, name, url, quantity, unit, notes, cost, status, item_id))
     conn.commit()
     conn.close()
-    upload_db()  # Upload the updated database after addition
+
 
 # Function to detect file encoding
 def detect_encoding(uploaded_file):
@@ -291,7 +162,15 @@ def import_csv_to_db(uploaded_file):
     except Exception as e:
         st.error(f"Error importing CSV: {e}")
 
-# Function to handle duplicates by merging them
+# Function to retrieve inventory data
+def get_inventory():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM inventory")
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
 def purge_and_merge_duplicates():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -342,7 +221,6 @@ def purge_and_merge_duplicates():
     conn.commit()
     conn.close()
     st.success(f"Duplicates purged and merged successfully.")
-    upload_db()  # Upload the updated database after addition
 
 
 # Function to update item status
@@ -364,7 +242,6 @@ def update_inventory_item(catalog_number, vendor, new_name, new_status, new_quan
 
     conn.commit()
     conn.close()
-    upload_db()  # Upload the updated database after addition
 
 # Function to download CSV template
 def download_csv_template():
@@ -410,11 +287,17 @@ for key, default in {
 
 st.title("Lab Inventory Management")
 
+inventory_df = pd.DataFrame(get_inventory(), columns=[
+    "ID", "Requested By", "Catalog Number", "Vendor", "Name", "URL",
+    "Quantity", "Unit", "Notes", "Cost", "Status", "Order Date", "Received Date"
+])
+inventory_df = inventory_df.drop(columns=["ID"])
+
 
 # Status filter
 status_filter = st.selectbox(
     "Filter by status:",
-    ["All"] + inventory_df["Status"].unique().tolist(),
+    ["All", "Requested", "Ordered", "Received"],
     index=0
 )
 
@@ -426,43 +309,6 @@ else:
 
 st.subheader(f"Inventory - {status_filter}")
 st.dataframe(filtered_inventory_df)
-
-# Add bulk status update feature
-st.markdown("### Bulk Status Update")
-
-# Add a checkbox for selecting all items
-select_all = st.checkbox("Select All")
-
-# Add checkboxes for each row
-selected_items = []
-for index, row in filtered_inventory_df.iterrows():
-    col1, col2, col3, col4 = st.columns([0.05, 0.3, 0.3, 0.35])
-    with col1:
-        if select_all or st.checkbox("", key=f"select_{index}"):
-            selected_items.append(row)
-    with col2:
-        st.write(row["Name"])
-    with col3:
-        st.write(row["Catalog Number"])
-    with col4:
-        st.write(row["Status"])
-
-if selected_items:
-    new_status = st.selectbox("Change status to:", ["Requested", "Ordered", "Received"])
-    if st.button("Update Selected Items"):
-        for item in selected_items:
-            update_inventory_item(
-                item["Catalog Number"],
-                item["Vendor"],
-                item["Name"],
-                new_status,
-                item["Quantity"],
-                item["Requested By"],
-                item["Notes"]
-            )
-        st.success("Selected items updated successfully!")
-        st.rerun()
-
 
 
 
@@ -658,3 +504,4 @@ else:
                     st.success(f"Item '{name}' added successfully!")
 
                 st.rerun()
+
