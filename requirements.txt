@@ -3,4 +3,4 @@ pandas
 datetime
 chardet
 gdown
-googleapiclient
+google-api-python-client
