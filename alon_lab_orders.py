@@ -428,25 +428,25 @@ st.subheader(f"Inventory - {status_filter}")
 st.dataframe(filtered_inventory_df)
 
 # Add bulk status update feature
-st.markdown("### Bulk Status Update")
-
-# Add a checkbox for selecting all items
-select_all = st.checkbox("Select All")
-
-# Add checkboxes for each row
-selected_items = []
-for index, row in filtered_inventory_df.iterrows():
-    col1, col2, col3, col4 = st.columns([0.05, 0.3, 0.3, 0.35])
-    with col1:
-        if select_all or st.checkbox("", key=f"select_{index}"):
-            selected_items.append(row)
-    with col2:
-        st.write(row["Name"])
-    with col3:
-        st.write(row["Catalog Number"])
-    with col4:
-        st.write(row["Status"])
-
+#st.markdown("### Bulk Status Update")
+#
+## Add a checkbox for selecting all items
+#select_all = st.checkbox("Select All")
+#
+## Add checkboxes for each row
+#selected_items = []
+#for index, row in filtered_inventory_df.iterrows():
+#    col1, col2, col3, col4 = st.columns([0.05, 0.3, 0.3, 0.35])
+#    with col1:
+#        if select_all or st.checkbox("", key=f"select_{index}"):
+#            selected_items.append(row)
+#    with col2:
+#        st.write(row["Name"])
+#    with col3:
+#        st.write(row["Catalog Number"])
+#    with col4:
+#        st.write(row["Status"])
+#
 #if selected_items:
 #    new_status = st.selectbox("Change status to:", ["Requested", "Ordered", "Received"])
 #    if st.button("Update Selected Items"):
@@ -460,8 +460,8 @@ for index, row in filtered_inventory_df.iterrows():
 #                item["Requested By"],
 #                item["Notes"]
 #            )
-        st.success("Selected items updated successfully!")
-        st.rerun()
+#       st.success("Selected items updated successfully!")
+#       st.rerun()
 
 
 
@@ -530,14 +530,39 @@ if search_query:
                     st.session_state['notes'] = row["Notes"] if pd.notnull(row["Notes"]) else ""
                     st.session_state['url'] = row["URL"] if pd.notnull(row["URL"]) else ""
 
-
                     st.success(f"Editing item: {row['Name']} (Catalog: {row['Catalog Number']})")
+                    st.rerun()
+
+                if st.button(f"Mark Ordered {row['Name']}", key=f"mark_ordered_{unique_key}"):
+                    update_inventory_item(
+                        row["Catalog Number"],
+                        row["Vendor"],
+                        row["Name"],
+                        "Ordered",  # Change status to Ordered
+                        row["Quantity"],
+                        row["Requested By"],
+                        row["Notes"]
+                    )
+                    st.success(f"Item '{row['Name']}' marked as Ordered.")
                     st.rerun()
 
             with col3:
                 if st.button(f"Delete {row['Name']}", key=f"delete_{unique_key}"):
                     delete_inventory_item(row["Catalog Number"], row["Vendor"])
                     st.success(f"Deleted item: {row['Name']} (Catalog: {row['Catalog Number']})")
+                    st.rerun()
+
+                if st.button(f"Mark Received {row['Name']}", key=f"mark_received_{unique_key}"):
+                    update_inventory_item(
+                        row["Catalog Number"],
+                        row["Vendor"],
+                        row["Name"],
+                        "Received",  # Change status to Received
+                        row["Quantity"],
+                        row["Requested By"],
+                        row["Notes"]
+                    )
+                    st.success(f"Item '{row['Name']}' marked as Received.")
                     st.rerun()
 
             st.markdown("---")
