@@ -481,7 +481,7 @@ if search_query:
 
             col1, col2, col3 = st.columns([1, 1, 1])
             with col1:
-                if st.button(f"Reorder {row['Name']}", key=f"reorder_{unique_key}"):
+                if st.button(f"Reorder", key=f"reorder_{unique_key}"):
                     existing_item = get_item_by_catalog_and_vendor(row["Catalog Number"], row["Vendor"])
             
                     if existing_item:
@@ -515,7 +515,7 @@ if search_query:
                     st.rerun()
 
             with col2:
-                if st.button(f"Edit {row['Name']}", key=f"edit_{unique_key}"):
+                if st.button(f"Edit", key=f"edit_{unique_key}"):
                     st.session_state['edit_mode'] = True
                     st.session_state['edit_catalog_number'] = row["Catalog Number"]
                     st.session_state['edit_vendor'] = row["Vendor"]
@@ -533,7 +533,7 @@ if search_query:
                     st.success(f"Editing item: {row['Name']} (Catalog: {row['Catalog Number']})")
                     st.rerun()
 
-                if st.button(f"Mark Ordered {row['Name']}", key=f"mark_ordered_{unique_key}"):
+                if st.button(f"Mark Ordered", key=f"mark_ordered_{unique_key}"):
                     update_inventory_item(
                         row["Catalog Number"],
                         row["Vendor"],
@@ -547,12 +547,12 @@ if search_query:
                     st.rerun()
 
             with col3:
-                if st.button(f"Delete {row['Name']}", key=f"delete_{unique_key}"):
+                if st.button(f"Delete", key=f"delete_{unique_key}"):
                     delete_inventory_item(row["Catalog Number"], row["Vendor"])
                     st.success(f"Deleted item: {row['Name']} (Catalog: {row['Catalog Number']})")
                     st.rerun()
 
-                if st.button(f"Mark Received {row['Name']}", key=f"mark_received_{unique_key}"):
+                if st.button(f"Mark Received", key=f"mark_received_{unique_key}"):
                     update_inventory_item(
                         row["Catalog Number"],
                         row["Vendor"],
