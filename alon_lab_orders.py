@@ -447,19 +447,19 @@ for index, row in filtered_inventory_df.iterrows():
     with col4:
         st.write(row["Status"])
 
-if selected_items:
-    new_status = st.selectbox("Change status to:", ["Requested", "Ordered", "Received"])
-    if st.button("Update Selected Items"):
-        for item in selected_items:
-            update_inventory_item(
-                item["Catalog Number"],
-                item["Vendor"],
-                item["Name"],
-                new_status,
-                item["Quantity"],
-                item["Requested By"],
-                item["Notes"]
-            )
+#if selected_items:
+#    new_status = st.selectbox("Change status to:", ["Requested", "Ordered", "Received"])
+#    if st.button("Update Selected Items"):
+#        for item in selected_items:
+#            update_inventory_item(
+#                item["Catalog Number"],
+#                item["Vendor"],
+#                item["Name"],
+#                new_status,
+#                item["Quantity"],
+#                item["Requested By"],
+#                item["Notes"]
+#            )
         st.success("Selected items updated successfully!")
         st.rerun()
 
